@@ -3,6 +3,8 @@ package flashcard.russian.xtend
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document
+import java.io.FileWriter
+import java.io.BufferedWriter
 
 class WikiWordLookup {
 	//public static 
@@ -24,7 +26,8 @@ class WikiWordLookup {
 											 		'нога' 		,
 											 		'дверь'		,
 											 		'работа' 	,	
-											 		'земля' 	)
+											 		'земля',
+											 		'лев' 	)
 											 		
 											 		
 	public static val testVerbs =	newArrayList(	'быть'		,
@@ -160,7 +163,7 @@ class WikiWordLookup {
 			throw new Exception("The word you are looking up on Wiktionary contains HTML which violates the constraints of the parser")
 		}
 		var documentJustContainingRussianSection = Jsoup::parse(docBeginEndRussianSection)
-		println(documentJustContainingRussianSection)
+		//println(documentJustContainingRussianSection)
 		return documentJustContainingRussianSection
 
 			
@@ -168,12 +171,10 @@ class WikiWordLookup {
 	}									
 										
 										
-	def static void lookupWiktionaryPage(String word,int number){
+	def static lookupWiktionaryPage(String word,int number){
 		print(number+"."+word+":")
 		val doc = Jsoup::connect("http://en.wiktionary.org/w/index.php?title="+word+"").get();
 		isolateRussianSection(doc,number)
-		
-		
 	}									
 																		 		
 											 		
@@ -182,15 +183,44 @@ class WikiWordLookup {
 	{
 		 
 		
-		testNouns.forEach[word,number|
-			try	
-				lookupWiktionaryPage(word.replaceAll(" ", "_").toLowerCase,number)
-			catch(org.jsoup.HttpStatusException e)
+		testNouns.forEach
+		[
+			word,number
+			|
+			
+			try	{
+				var doc = lookupWiktionaryPage(word.replaceAll(" ", "_").toLowerCase,number)
+				writeToFile(word,doc)
+				printSubHeadings(doc)
+			}catch(org.jsoup.HttpStatusException e){
 				println("Word Not Available On Wiktionary")
-			catch(java.net.SocketTimeoutException e)
+			}catch(java.net.SocketTimeoutException e){
 				println("Connection Fucked when looking for word")
+			}
+			
+			
+			
+			
 		]
 		
 	}
 	
+
+	def static  writeToFile(String word,Document document)
+	{
+		var fstream = new FileWriter("/Users/jonathncummins/git/glowing-lana/Flashcard/OtherFiles/"+word+".txt");
+  		var out = new BufferedWriter(fstream);
+  		out.write(document.toString);
+
+  		out.close();
+	}
+	def static printSubHeadings(Document document)
+	{
+		var headings = document.select("h3")	
+		headings.forEach[
+			heading,index|
+			println(heading.select("span.mw-headline").get(0).ownText)
+		]
+	}
+
 }
